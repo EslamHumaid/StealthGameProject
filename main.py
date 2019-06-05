@@ -21,7 +21,8 @@ RobotWalkLeft = [pygame.image.load('Images/rl2.png'), pygame.image.load('Images/
 RobotWalkRight = [pygame.image.load('Images/rr1.png'), pygame.image.load('Images/rr2.png'), pygame.image.load('Images/rr3.png'), pygame.image.load('Images/rr4.png'), pygame.image.load('Images/rr5.png'), pygame.image.load('Images/rr6.png'), pygame.image.load('Images/rr7.png'), pygame.image.load('Images/rr8.png')]
 game_map = pygame.image.load('Images/map.png')
 walls = pygame.image.load('Images/wall.png')
-
+blockImg = pygame.image.load('Images/block.png')
+bushImg = pygame.image.load('Images/bush.png')
 
 # display
 display_width = 800
@@ -53,9 +54,20 @@ class Bush:
 
 
 class Character:
-    def __init__(self, charx, chary):
+    def __init__(self, charx, chary, charw, charh):
         self.x = charx
         self.y = chary
+        self.width = charw
+        self.height = charh
+
+
+class Block:
+    def __init__(self, blockx, blocky, blockw, blockh, blocktype):
+        self.x = blockx
+        self.y = blocky
+        self.width = blockw
+        self.height = blockh
+        self.type = blocktype
 
 
 def detected():
@@ -71,7 +83,7 @@ def detected():
 
 def game_loop():
     game_exit = False
-    main_char = Character(550, 200)
+    main_char = Character(550, 200, 30, 49)
     x_change = 0
     y_change = 0
     xinit_point = 400
@@ -81,12 +93,15 @@ def game_loop():
     first_bush = Bush(550, 280, 70, 70)
     bushs_list = [first_bush]
     robots_direction = 2
+    first_block = Block(200, 250, 100, 100, 'horizental')
+    blocks_list = [first_block]
+
     left = False
     right = False
     up = False
     down = False
     robot_left = False
-    robot_right = False
+    robot_right = True
     hiding = False
     walkCount = 0
     robot_walk_count = 0
@@ -156,18 +171,6 @@ def game_loop():
         elif main_char.y > 450 - 50:
             main_char.y = 450 - 50
 
-        # moving robot
-        if first_robot.x >= xinit_point + 100:
-            robots_direction = -2
-            robot_left = True
-            robot_right = False
-        elif first_robot.x <= xinit_point - 100:
-            robots_direction = 2
-            robot_right = True
-            robot_left = False
-
-        first_robot.x += robots_direction
-
         # DRAWING
         gameDisplay.blit(game_map, (0, 150))
         gameDisplay.blit(walls, (0, 130))
@@ -197,8 +200,7 @@ def game_loop():
 
         # drawing robots
         for robot in robots_list:
-            # robot.y = robots_y
-            # robot.x = robots_x
+
             if robot_left:
                 gameDisplay.blit(RobotWalkLeft[robot_walk_count//3], (robot.x, robot.y))
                 robot_walk_count += 1
@@ -206,9 +208,14 @@ def game_loop():
                 gameDisplay.blit(RobotWalkRight[robot_walk_count//3], (robot.x, robot.y))
                 robot_walk_count += 1
 
+        # drawing blocks
+        for block in blocks_list:
+            gameDisplay.blit(blockImg, (block.x, block.y))
+
         # drawing bushs
         for bush in bushs_list:
-            pygame.draw.rect(gameDisplay, green, (bush.x, bush.y, bush.width, bush.height))
+
+            gameDisplay.blit(bushImg, (bush.x, bush.y))
 
         # hiding
         for bush in bushs_list:
@@ -223,6 +230,31 @@ def game_loop():
             if (main_char.x > robot.x - 70) and (main_char.x < robot.x + robot.width + 70) and (not hiding):
                 if(main_char.y > robot.y - 50) and (main_char.y < robot.y + robot.height + 50):
                     detected()
+
+        # moving robot
+        if first_robot.x >= xinit_point + 100:
+            robots_direction = -2
+            robot_left = True
+            robot_right = False
+        elif first_robot.x <= xinit_point - 100:
+            robots_direction = 2
+            robot_right = True
+            robot_left = False
+
+        first_robot.x += robots_direction
+
+        # colliding with blocks
+        for block in blocks_list:
+            if (main_char.x + main_char.width > block.x) and (main_char.x < block.x + block.width):
+                if main_char.y + main_char.height > block.y and main_char.y < block.y + block.height:
+                    if down:
+                        main_char.y = block.y - main_char.height
+                    elif up:
+                        main_char.y = block.y + block.height
+                    elif right:
+                        main_char.x = block.x - main_char.width
+                    elif left:
+                        main_char.x = block.x + block.width
 
         pygame.display.update()
         clock.tick(24)
